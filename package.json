@@ -1,0 +1,22 @@
+{
+  "name": "yt-video-downloader",
+  "version": "1.0.0",
+  "description": "YTPro - Premium YouTube downloader for Videos, Shorts, and Audio",
+  "main": "netlify/functions/download.js",
+  "scripts": {
+    "dev": "netlify dev",
+    "build": "echo Building YTPro..."
+  },
+  "keywords": [
+    "youtube",
+    "downloader",
+    "4k",
+    "shorts",
+    "audio"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "netlify-cli": "latest"
+  }
+}

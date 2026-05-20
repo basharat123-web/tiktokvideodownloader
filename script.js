@@ -39,11 +39,32 @@ document.addEventListener('DOMContentLoaded', () => {
         resultArea.classList.add('hidden');
 
         try {
-            const id = getYouTubeId(url);
-            if (id) {
-                thumbnail.src = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
-                videoTitle.textContent = "Video loaded";
-                resultArea.classList.remove('hidden');
+            // Try to fetch from Netlify function first (if deployed)
+            try {
+                const response = await fetch('/.netlify/functions/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.videoInfo) {
+                        thumbnail.src = data.videoInfo.thumbnail || `https://img.youtube.com/vi/${getYouTubeId(url)}/maxresdefault.jpg`;
+                        videoTitle.textContent = data.videoInfo.title || "Video loaded";
+                        typeBadge.textContent = (data.videoInfo.type === 'short' ? 'Short' : 'Video');
+                        currentVideoData = data;
+                    }
+                }
+            } catch (e) {
+                // Local development: Use basic info
+                console.log("Using local metadata fallback");
+                const id = getYouTubeId(url);
+                if (id) {
+                    thumbnail.src = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+                    videoTitle.textContent = "Video loaded";
+                    typeBadge.textContent = isShorts(url) ? 'Short' : 'Video';
+                }
             }
 
             setStatus('Ready to download!', 'success');
@@ -51,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
             resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (err) {
             console.error(err);
-            setStatus('Ready! Click Download to process.', 'success');
+            setStatus('Please try a different link', 'error');
         } finally {
             loader.classList.add('hidden');
         }
@@ -63,12 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const format = formatSelect.value;
 
         loader.classList.remove('hidden');
-        setStatus('Processing...', 'success');
+        setStatus('Preparing download...', 'success');
 
         try {
-            let data = null;
+            let downloadUrl = null;
 
-            // Try Netlify Function (works when deployed)
+            // Try Netlify Function first (works when deployed)
             try {
                 const response = await fetch('/.netlify/functions/download', {
                     method: 'POST',
@@ -80,25 +101,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     })
                 });
                 if (response.ok) {
-                    data = await response.json();
+                    const data = await response.json();
+                    downloadUrl = data.downloadUrl || data.url;
                 }
             } catch (e) {
-                console.log("Local/not deployed - Netlify function unavailable");
+                console.log("Netlify function unavailable, using fallback");
             }
 
-            if (data && data.url) {
-                // Open download service in new window instead of trying direct download
-                window.open(data.url, '_blank');
-                setStatus('Download service opened in new tab!', 'success');
-            } else {
-                setStatus('Try again. Opening Cobalt downloader...', 'error');
-                const url = videoUrlInput.value.trim();
-                window.open(`https://cobalt.tools/?url=${encodeURIComponent(url)}`, '_blank');
+            // Fallback or if no URL from function
+            if (!downloadUrl) {
+                const qualityParam = quality === 'max' ? '1080' : quality;
+                downloadUrl = `https://cobalt.tools/?url=${encodeURIComponent(url)}&vQuality=${qualityParam}${format === 'mp3' ? '&aFormat=mp3' : ''}`;
             }
+
+            // Open download service in new tab
+            window.open(downloadUrl, '_blank');
+            setStatus('✓ Download service opened in new tab!', 'success');
 
         } catch (err) {
             console.error(err);
-            setStatus('Deploy to Netlify to enable downloads', 'error');
+            setStatus('Error: ' + err.message, 'error');
         } finally {
             loader.classList.add('hidden');
         }

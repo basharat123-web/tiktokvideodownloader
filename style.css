@@ -338,10 +338,22 @@ select {
     text-align: center;
     font-size: 0.95rem;
     min-height: 20px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    transition: all 0.3s ease;
 }
 
-.error { color: #ef4444; }
-.success { color: #10b981; }
+.status-message.error {
+    color: #fecaca;
+    background: rgba(239, 68, 68, 0.15);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-message.success {
+    color: #86efac;
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
 
 /* Responsive */
 @media (max-width: 768px) {
