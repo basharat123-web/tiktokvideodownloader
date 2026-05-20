@@ -155,8 +155,12 @@ FUNCTION_TIMEOUT=30
 
 ## API Details
 
-### Netlify Function Endpoint
+### Serverless Function Endpoint
+When deployed on Netlify, the endpoint is:
 **POST** `/.netlify/functions/download`
+
+When deployed on Vercel, the endpoint is:
+**POST** `/api/download`
 
 Request body:
 ```json

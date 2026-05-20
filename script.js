@@ -27,6 +27,47 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const isShorts = (url) => url.includes('/shorts/');
 
+    const isFileProtocol = window.location.protocol === 'file:';
+    const functionPaths = isFileProtocol ? [] : ['/.netlify/functions/download', '/api/download'];
+
+    const callServerFunction = async (payload) => {
+        for (const path of functionPaths) {
+            try {
+                const response = await fetch(path, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) {
+                    return await response.json();
+                }
+            } catch (err) {
+                console.warn(`Server function unavailable at ${path}`, err.message);
+            }
+        }
+        return null;
+    };
+
+    const fetchMetadataFallback = async (videoUrl) => {
+        try {
+            const response = await fetch(`https://noembed.com/embed?url=${encodeURIComponent(videoUrl)}`);
+            if (!response.ok) throw new Error('Metadata service unavailable');
+            const info = await response.json();
+            return {
+                title: info.title || 'Video loaded',
+                thumbnail: info.thumbnail_url || `https://img.youtube.com/vi/${getYouTubeId(videoUrl)}/maxresdefault.jpg`,
+                type: videoUrl.includes('/shorts/') ? 'short' : 'video'
+            };
+        } catch (error) {
+            const id = getYouTubeId(videoUrl);
+            return {
+                title: 'Video loaded',
+                thumbnail: id ? `https://img.youtube.com/vi/${id}/maxresdefault.jpg` : '',
+                type: isShorts(videoUrl) ? 'short' : 'video'
+            };
+        }
+    };
+
     const fetchInfo = async () => {
         const url = videoUrlInput.value.trim();
         if (!url) {
@@ -39,33 +80,22 @@ document.addEventListener('DOMContentLoaded', () => {
         resultArea.classList.add('hidden');
 
         try {
-            // Try to fetch from Netlify function first (if deployed)
-            try {
-                const response = await fetch('/.netlify/functions/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ url })
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.videoInfo) {
-                        thumbnail.src = data.videoInfo.thumbnail || `https://img.youtube.com/vi/${getYouTubeId(url)}/maxresdefault.jpg`;
-                        videoTitle.textContent = data.videoInfo.title || "Video loaded";
-                        typeBadge.textContent = (data.videoInfo.type === 'short' ? 'Short' : 'Video');
-                        currentVideoData = data;
-                    }
-                }
-            } catch (e) {
-                // Local development: Use basic info
-                console.log("Using local metadata fallback");
-                const id = getYouTubeId(url);
-                if (id) {
-                    thumbnail.src = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
-                    videoTitle.textContent = "Video loaded";
-                    typeBadge.textContent = isShorts(url) ? 'Short' : 'Video';
+            let videoInfo = null;
+            if (!isFileProtocol) {
+                const data = await callServerFunction({ url });
+                if (data && data.videoInfo) {
+                    videoInfo = data.videoInfo;
                 }
             }
+
+            if (!videoInfo) {
+                videoInfo = await fetchMetadataFallback(url);
+            }
+
+            thumbnail.src = videoInfo.thumbnail;
+            videoTitle.textContent = videoInfo.title;
+            typeBadge.textContent = videoInfo.type === 'short' ? 'Short' : 'Video';
+            currentVideoData = videoInfo;
 
             setStatus('Ready to download!', 'success');
             resultArea.classList.remove('hidden');
@@ -84,43 +114,32 @@ document.addEventListener('DOMContentLoaded', () => {
         const format = formatSelect.value;
 
         loader.classList.remove('hidden');
-        setStatus('Preparing download...', 'success');
+        setStatus('⏳ Preparing your download...', 'success');
 
         try {
             let downloadUrl = null;
 
-            // Try Netlify Function first (works when deployed)
-            try {
-                const response = await fetch('/.netlify/functions/download', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        url: url,
-                        videoQuality: quality === 'max' ? '1080' : quality,
-                        isAudioOnly: format === 'mp3'
-                    })
+            if (!isFileProtocol) {
+                const data = await callServerFunction({
+                    url,
+                    videoQuality: quality === 'max' ? '1080' : quality,
+                    isAudioOnly: format === 'mp3'
                 });
-                if (response.ok) {
-                    const data = await response.json();
+                if (data) {
                     downloadUrl = data.downloadUrl || data.url;
                 }
-            } catch (e) {
-                console.log("Netlify function unavailable, using fallback");
             }
 
-            // Fallback or if no URL from function
             if (!downloadUrl) {
                 const qualityParam = quality === 'max' ? '1080' : quality;
                 downloadUrl = `https://cobalt.tools/?url=${encodeURIComponent(url)}&vQuality=${qualityParam}${format === 'mp3' ? '&aFormat=mp3' : ''}`;
             }
 
-            // Open download service in new tab
             window.open(downloadUrl, '_blank');
-            setStatus('✓ Download service opened in new tab!', 'success');
-
+            setStatus('✓ Download started! Check your browser for pop-ups.', 'success');
         } catch (err) {
             console.error(err);
-            setStatus('Error: ' + err.message, 'error');
+            setStatus('❌ Error: ' + (err.message || 'Failed to start download'), 'error');
         } finally {
             loader.classList.add('hidden');
         }
