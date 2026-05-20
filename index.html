@@ -3,62 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Downloader | No Watermark HD</title>
-    <meta name="description" content="Download TikTok videos without watermark in high resolution for free. Fast and easy TikTok video downloader.">
+    <title>YTPro | Ultra 4K & Shorts Downloader</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="bg-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
-
-    <div class="container">
-        <header>
-            <h1>TikTok Save</h1>
-            <p class="subtitle">High Quality • No Watermark • Free</p>
+    <div class="mesh-gradient"></div>
+    
+    <main class="container">
+        <header class="hero">
+            <div class="logo">
+                <i class="fa-brands fa-youtube"></i>
+                <span>YTPro</span>
+            </div>
+            <h1>Download <span class="gradient-text">YouTube</span> in 4K</h1>
+            <p class="subtitle">Premium downloader for Videos, Shorts, and Audio</p>
         </header>
 
-        <main>
+        <section class="downloader-card glass">
             <div class="input-group">
-                <input type="text" id="tiktokUrl" placeholder="Paste TikTok link here..." autocomplete="off">
-                <div id="errorMsg" class="error-msg">Please enter a valid TikTok URL</div>
+                <input type="text" id="videoUrl" placeholder="Paste YouTube link here..." autocomplete="off">
+                <button id="searchBtn">
+                    <i class="fa-solid fa-bolt"></i>
+                    <span>Fetch</span>
+                </button>
             </div>
+            
+            <div id="statusMessage" class="status-message"></div>
 
-            <button id="downloadBtn" class="download-btn">
-                <i class="fa-solid fa-cloud-arrow-down"></i>
-                <span>Get Video</span>
-            </button>
-
-            <div id="loader" class="loader"></div>
-
-            <section id="resultArea" class="result-card">
-                <div class="video-info">
-                    <div class="thumbnail-container">
-                        <img id="videoThumb" src="" alt="Video Thumbnail">
-                    </div>
-                    <div id="videoTitle" class="video-title"></div>
-                    
-                    <div class="download-options">
-                        <a id="hdDownload" href="javascript:void(0)" class="opt-btn primary">
-                            <i class="fa-solid fa-circle-down"></i> No Watermark HD
-                        </a>
-                        <a id="sdDownload" href="javascript:void(0)" class="opt-btn">
-                            <i class="fa-solid fa-download"></i> Standard Quality
-                        </a>
-                        <a id="musicDownload" href="javascript:void(0)" class="opt-btn">
-                            <i class="fa-solid fa-music"></i> Download MP3
-                        </a>
-                    </div>
+            <div id="resultArea" class="result-area hidden">
+                <div class="video-preview">
+                    <img id="thumbnail" src="" alt="Thumbnail">
+                    <div class="badge" id="typeBadge">Video</div>
                 </div>
-            </section>
-        </main>
+                <div class="video-info">
+                    <h2 id="videoTitle">Video Title</h2>
+                    <div class="options">
+                        <div class="select-wrapper">
+                            <label for="quality">Quality</label>
+                            <select id="quality">
+                                <option value="max">Best (Up to 4K)</option>
+                                <option value="2160">4K (2160p)</option>
+                                <option value="1440">2K (1440p)</option>
+                                <option value="1080" selected>Full HD (1080p)</option>
+                                <option value="720">HD (720p)</option>
+                                <option value="480">480p</option>
+                                <option value="360">360p</option>
+                            </select>
+                        </div>
+                        <div class="select-wrapper">
+                            <label for="format">Format</label>
+                            <select id="format">
+                                <option value="mp4">MP4 Video</option>
+                                <option value="webm">WebM Video</option>
+                                <option value="mp3">MP3 Audio</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="downloadBtn" class="primary-btn">
+                        <i class="fa-solid fa-download"></i>
+                        <span>Download Now</span>
+                    </button>
+                </div>
+            </div>
+        </section>
 
-        <footer style="margin-top: 40px; font-size: 0.75rem; color: rgba(255,255,255,0.2);">
-            <p>Paste the link and the tool will handle the rest.</p>
-        </footer>
+        <section class="features">
+            <div class="feature-item glass">
+                <i class="fa-solid fa-film"></i>
+                <h3>4K Resolution</h3>
+                <p>Support for crystal clear 2160p downloads.</p>
+            </div>
+            <div class="feature-item glass">
+                <i class="fa-solid fa-mobile-screen"></i>
+                <h3>Shorts Ready</h3>
+                <p>Automatically detects and processes Shorts.</p>
+            </div>
+            <div class="feature-item glass">
+                <i class="fa-solid fa-gauge-high"></i>
+                <h3>High Speed</h3>
+                <p>Direct high-speed servers for fast fetching.</p>
+            </div>
+        </section>
+    </main>
+
+    <div id="loader" class="loader-overlay hidden">
+        <div class="loader-content">
+            <div class="spinner"></div>
+            <p>Processing High-Quality Stream...</p>
+        </div>
     </div>
 
     <script src="script.js"></script>

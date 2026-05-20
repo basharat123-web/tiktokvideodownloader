@@ -1,142 +1,110 @@
-const downloadBtn = document.getElementById('downloadBtn');
-const tiktokUrlInput = document.getElementById('tiktokUrl');
-const loader = document.getElementById('loader');
-const resultArea = document.getElementById('resultArea');
-const errorMsg = document.getElementById('errorMsg');
+document.addEventListener('DOMContentLoaded', () => {
+    const videoUrlInput = document.getElementById('videoUrl');
+    const searchBtn = document.getElementById('searchBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const resultArea = document.getElementById('resultArea');
+    const statusMessage = document.getElementById('statusMessage');
+    const loader = document.getElementById('loader');
 
-const videoThumb = document.getElementById('videoThumb');
-const videoTitle = document.getElementById('videoTitle');
-const hdDownload = document.getElementById('hdDownload');
-const sdDownload = document.getElementById('sdDownload');
-const musicDownload = document.getElementById('musicDownload');
+    const thumbnail = document.getElementById('thumbnail');
+    const videoTitle = document.getElementById('videoTitle');
+    const typeBadge = document.getElementById('typeBadge');
+    const qualitySelect = document.getElementById('quality');
+    const formatSelect = document.getElementById('format');
 
-downloadBtn.addEventListener('click', async () => {
-    const url = tiktokUrlInput.value.trim();
-    
-    if (!url || !url.includes('tiktok.com')) {
-        showError("Please enter a valid TikTok URL");
-        return;
-    }
+    let currentVideoData = null;
 
-    resetUI();
-    showLoader(true);
-
-    try {
-        const apiUrl = `https://www.tikwm.com/api/?url=${encodeURIComponent(url)}`;
-        const response = await fetch(apiUrl);
-        const result = await response.json();
-
-        if (result.code === 0 && result.data) {
-            displayResult(result.data);
-        } else {
-            showError(result.msg || "Failed to fetch video. Please check the link.");
-        }
-    } catch (error) {
-        console.error(error);
-        showError("Connection error. Please try again later.");
-    } finally {
-        showLoader(false);
-    }
-});
-
-function displayResult(data) {
-    videoThumb.src = data.cover;
-    videoTitle.innerText = data.title || "TikTok Video";
-    
-    // Helper to ensure absolute URL
-    const formatUrl = (path) => {
-        if (!path) return "#";
-        return path.startsWith('http') ? path : `https://www.tikwm.com${path}`;
+    const setStatus = (msg, type = '') => {
+        statusMessage.textContent = msg;
+        statusMessage.className = `status-message ${type}`;
     };
 
-    // Store URLs in data attributes
-    hdDownload.dataset.url = formatUrl(data.play);
-    sdDownload.dataset.url = formatUrl(data.wmplay);
-    musicDownload.dataset.url = formatUrl(data.music);
+    const getYouTubeId = (url) => {
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length === 11) ? match[2] : null;
+    };
 
-    // Show result area
-    resultArea.style.display = 'block';
-    
-    // Smooth scroll to result
-    resultArea.scrollIntoView({ behavior: 'smooth' });
-}
+    const isShorts = (url) => url.includes('/shorts/');
 
-async function triggerDownload(element, fileName) {
-    const url = element.dataset.url;
-    if (!url || url === "#") return;
-
-    const originalText = element.innerHTML;
-    element.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Downloading...';
-    element.style.pointerEvents = 'none';
-
-    try {
-        const response = await fetch(url);
-        const blob = await response.blob();
-        const blobUrl = window.URL.createObjectURL(blob);
-        
-        const a = document.createElement('a');
-        a.href = blobUrl;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(blobUrl);
-    } catch (error) {
-        console.error("Download failed", error);
-        // Fallback: open in new tab if fetch fails due to CORS
-        window.open(url, '_blank');
-    } finally {
-        element.innerHTML = originalText;
-        element.style.pointerEvents = 'auto';
-    }
-}
-
-hdDownload.addEventListener('click', (e) => {
-    e.preventDefault();
-    triggerDownload(hdDownload, 'tiktok_video_hd.mp4');
-});
-
-sdDownload.addEventListener('click', (e) => {
-    e.preventDefault();
-    triggerDownload(sdDownload, 'tiktok_video_sd.mp4');
-});
-
-musicDownload.addEventListener('click', (e) => {
-    e.preventDefault();
-    triggerDownload(musicDownload, 'tiktok_audio.mp3');
-});
-
-function showLoader(show) {
-    loader.style.display = show ? 'block' : 'none';
-    downloadBtn.disabled = show;
-    downloadBtn.style.opacity = show ? '0.6' : '1';
-}
-
-function showError(msg) {
-    errorMsg.innerText = msg;
-    errorMsg.style.display = 'block';
-    setTimeout(() => {
-        errorMsg.style.display = 'none';
-    }, 5000);
-}
-
-function resetUI() {
-    resultArea.style.display = 'none';
-    errorMsg.style.display = 'none';
-}
-
-// Auto-fetch on paste
-tiktokUrlInput.addEventListener('paste', () => {
-    setTimeout(() => {
-        if (tiktokUrlInput.value.includes('tiktok.com')) {
-            downloadBtn.click();
+    const fetchInfo = async () => {
+        const url = videoUrlInput.value.trim();
+        if (!url) {
+            setStatus('Please paste a valid YouTube link', 'error');
+            return;
         }
-    }, 100);
-});
 
-// Allow Enter key to trigger download
-tiktokUrlInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        downloadBtn.click();
-    }
+        setStatus('');
+        loader.classList.remove('hidden');
+        resultArea.classList.add('hidden');
+
+        try {
+            const id = getYouTubeId(url);
+            if (id) {
+                thumbnail.src = `https://img.youtube.com/vi/${id}/maxresdefault.jpg`;
+                videoTitle.textContent = "Video loaded";
+                resultArea.classList.remove('hidden');
+            }
+
+            setStatus('Ready to download!', 'success');
+            resultArea.classList.remove('hidden');
+            resultArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {
+            console.error(err);
+            setStatus('Ready! Click Download to process.', 'success');
+        } finally {
+            loader.classList.add('hidden');
+        }
+    };
+
+    const triggerDownload = async () => {
+        const url = videoUrlInput.value.trim();
+        const quality = qualitySelect.value;
+        const format = formatSelect.value;
+
+        loader.classList.remove('hidden');
+        setStatus('Processing...', 'success');
+
+        try {
+            let data = null;
+
+            // Try Netlify Function (works when deployed)
+            try {
+                const response = await fetch('/.netlify/functions/download', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        url: url,
+                        videoQuality: quality === 'max' ? '1080' : quality,
+                        isAudioOnly: format === 'mp3'
+                    })
+                });
+                if (response.ok) {
+                    data = await response.json();
+                }
+            } catch (e) {
+                console.log("Local/not deployed - Netlify function unavailable");
+            }
+
+            if (data && data.url) {
+                // Open download service in new window instead of trying direct download
+                window.open(data.url, '_blank');
+                setStatus('Download service opened in new tab!', 'success');
+            } else {
+                setStatus('Try again. Opening Cobalt downloader...', 'error');
+                const url = videoUrlInput.value.trim();
+                window.open(`https://cobalt.tools/?url=${encodeURIComponent(url)}`, '_blank');
+            }
+
+        } catch (err) {
+            console.error(err);
+            setStatus('Deploy to Netlify to enable downloads', 'error');
+        } finally {
+            loader.classList.add('hidden');
+        }
+    };
+
+    searchBtn.addEventListener('click', fetchInfo);
+    downloadBtn.addEventListener('click', triggerDownload);
+    videoUrlInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') fetchInfo(); });
 });
